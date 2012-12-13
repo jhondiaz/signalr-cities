@@ -1,4 +1,5 @@
 #summary Introduction to Signal-R
+#labels Featured
 
 = Introduction =
 
