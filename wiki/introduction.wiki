@@ -5,6 +5,6 @@
 This is an example that shows the functionality of real-time interaction with Signal-R.
 In this example we show how you can make changes in one client, and this changes are reflected in every client connected to the site.
 
-Once deployed the [http://code.google.com/p/signalr-cities/downloads/detail?name=cities.rar]database, change your connection string.
+Once deployed the [http://code.google.com/p/signalr-cities/downloads/detail?name=cities.rar database], change your connection string.
 Run proyect and open multiple tabs.
 Once running try to delete, update, or add some cities. You will notice that these changes are reflected in all tabs opened.
