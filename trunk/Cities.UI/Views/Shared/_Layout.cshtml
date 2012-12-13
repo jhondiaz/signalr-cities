@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="DESCRIPTION" content="" />
+    @RenderSection("Metadata", false)
+    <title>Signal-R example</title>
+    @RenderSection("StyleSheets", false) 
+    <link href="@Url.Content("~/Content/bootstrap.min.css")" rel="stylesheet" type="text/css" />
+    <link rel="Shortcut Icon" href="https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/jquery.signalR-0.5.2.min.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/bootstrap.min.js")" type="text/javascript"></script>
+</head>
+<body style="padding: 50px 10px 0px;" data-spy="scroll" data-target=".subnav" data-offset="50" data-twttr-rendered="true">
+    <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <a class="brand" href="https://code.google.com/p/signalr-cities/">Signal-R code example</a> 
+                <ul class="nav pull-right">
+                    <li><a>@User.Identity.Name</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    @RenderSection("Header", false)
+    <section id="main">
+        @RenderBody()
+    </section>
+    <footer>
+    </footer>
+</body>
+</html>
