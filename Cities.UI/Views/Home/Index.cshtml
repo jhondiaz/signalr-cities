@@ -1,0 +1,209 @@
+﻿@section StyleSheets
+{
+    <style>
+        #cities a { cursor: pointer; }
+    </style>
+}
+
+<script src="@Url.Content("~/Scripts/jquery-1.6.4.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.signalR-0.5.2.min.js")" type="text/javascript"></script>
+<script type="text/javascript">
+    $(function () {
+        var connection = $.connection('/echo');
+
+        connection.received(function (data) {
+            var obj = jQuery.parseJSON(data);
+
+            if (obj.action == "DELETE")
+            {
+                $("#cities tbody [data-id='" + obj.cityid + "']").remove();
+                $("#count").html($("#count").html() - 1);
+                checkItems();
+            }
+            else if (obj.action == "UPDATE") {
+                updateRow(obj.cityid, obj.name, obj.stateid, $("#state [value='" + obj.stateid + "']").html());
+            }
+            else if (obj.action == "INSERT") {
+                if ((obj.stateid == $("#state").val() || $("#state").val() == "") && !$("#loadmore").is(":visible"))
+                {
+                    getCities($("#cities tbody tr").length + 1, false, true);
+                }
+            }
+        });
+
+        connection.start();
+
+        function addRow(cityid, name, stateid, state)
+        {
+            $("#cities tbody").append("<tr data-id='" + cityid + "' data-state='" + stateid + "'><td>" + name + "</td><td>" + state + "</td><td><a name='edit' class='btn btn-mini' data-toggle='modal' href='#citymodal'>Edit</a> <a class='btn btn-mini btn-danger' name='delete'>Delete</a></td>");
+        }
+
+        function updateRow(cityid, name, stateid, state)
+        {
+            var tr = $("#cities tbody [data-id='" + cityid + "']");
+            if ($("#state").val() != "" && stateid != tr.data("state")) {
+                tr.remove();
+            }
+            else {
+                var td = tr.data("state", stateid).find("td");
+
+                td.first().html(name);
+                td.first().next().html(state);
+            }
+        }
+
+        function getCities(count, animate, remove) {
+             $.getJSON("@Url.Action("GetCities")", { term: $("#search").val(), stateid: $("#state").val(), start: remove ? 0 : $("#cities tbody tr").length, count: count }, function (data, status, req) {
+                $("#count").html(data.total);
+                
+                if (remove) {
+                    $("#cities tbody tr").remove();
+                }
+                
+                if (data.count != 0) {
+                    $("#cities").show("fast");
+                    $("#noitems").hide();
+
+                    $.each(data.cities, function() { 
+                        addRow(this.id, this.name, this.stateid, this.state);
+                        var last = $("#cities tbody tr").last();
+
+                        if (animate == undefined || animate) { 
+                            last.hide().fadeIn("fast");
+                            $("#loadmore").show();
+                        }
+
+                        last.find("[name='edit']").click(function () {
+                            $("#citymodal h3").html("Edit city");
+                            $("#cityid").val(last.data("id"));
+                            $("#stateid").val(last.data("state"));
+                            $("#description").val(last.find("td").first().html());
+                        });
+
+                        last.find("[name='delete']").click(function () {
+                            $.ajax({
+                                type: 'DELETE',
+                                url: "@Url.Action("DeleteCity")",
+                                data: { id: last.data("id") },
+                                success: function () { last.remove(); checkItems(); }
+                            });
+                        });
+                    });
+                }
+                
+                if (data.count == 0 || $("#cities tbody tr").length == data.total) {
+                    $("#loadmore").hide();
+                }
+
+                checkItems();
+            });
+        }
+
+        function checkItems() {
+            if ($("#cities tbody tr").length == 0) {
+                $("#cities").hide();
+                $("#noitems").fadeIn();
+            }
+        }
+
+        $("#search").keyup(function () { getCities(30, false, true); });
+        $("#state").change(function () { getCities(30, true, true); })
+        $("#loadmore").click(function () { getCities(30); });
+
+        $("#addcity").click(function () {
+            $("#citymodal h3").html("Add city");
+            $("#cityid").val("0");
+            $("#description").val("");
+            $("#stateid").val($("#state").val());
+            $("#descriptiongroup").removeClass("error");
+            $("#descriptiongroup .help-inline").hide();
+        });
+
+        $("#save").click(function () {
+            if ($("#description").val() == "")
+            {
+                $("#descriptiongroup").addClass("error");
+                $("#descriptiongroup .help-inline").show();
+
+                return false;
+            }
+
+            $.post("@Url.Action("SaveCity")", { cityid: $("#cityid").val(), description: $("#description").val(), stateid: $("#stateid").val() }, function (data) {
+                if ($("#cityid").val() == 0 && ($("#stateid").val() == $("#state").val() || $("#state").val() == "") && !$("#loadmore").is(":visible")) {
+                    getCities($("#cities tbody tr").length + 1, false, true);
+                }
+                else if ($("#cityid").val() != 0) {
+                    updateRow(data, $("#description").val(), $("#stateid").val(), $("#stateid option:selected").html());
+                }
+            });
+        });
+
+        $(window).scroll(function () {
+            if (document.documentElement.clientHeight + $(document).scrollTop() >= document.body.offsetHeight) {
+                getCities(10);
+            }
+        });
+
+        getCities(30);
+    });
+</script>
+
+<label for="search">Select state:</label>
+@Html.DropDownList("state", new SelectList(ViewBag.States, "StateId", "Description"), "[All]", null)
+<label for="search">Type to search:</label>
+<input id="search" name="search" type="text"/>
+
+<div style="clear:both"></div>
+
+<a id="addcity" class="btn" data-toggle="modal" href="#citymodal" style="margin-bottom: 10px;">Add city</a>
+
+<div style="float:right;">
+    <span id="count"></span> items found
+</div>
+
+<table id="cities" class="table table-bordered">
+    <thead>
+        <tr>
+            <th>City</th>
+            <th>State</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<div id="noitems" class="alert alert-error" style="display:none">
+    No items found
+</div>
+
+<a id="loadmore" style="display: none;" href="#">Load more</a>
+
+@Html.Hidden("cityid")
+<div class="modal hide" id="citymodal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>City</h3>
+    </div>
+    <div class="modal-body form-horizontal">
+        <fieldset>
+            <div class="control-group" id="descriptiongroup">
+                <label class="control-label" for="description">Description</label>
+                <div class="controls">
+                    @Html.TextBox("description")
+                    <span class="help-inline" style="display: none">Mandatory field.</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="stateid">State</label>
+                <div class="controls">
+                    @Html.DropDownList("stateid", new SelectList(ViewBag.States, "StateId", "Description"))
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a id="save" href="#" data-dismiss="modal" class="btn btn-primary">Save changes</a>
+    </div>
+</div>
